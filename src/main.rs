@@ -9,6 +9,8 @@ use image::Pixel;
 use rdev::{listen, simulate, Event, EventType, Key, SimulateError};
 use xcap::Monitor;
 
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
 fn main() {
     // let button = image::load_from_memory(include_bytes!("button.png"))
     //     .unwrap()
@@ -16,8 +18,9 @@ fn main() {
 
     // let button_color = button.pixels().next().unwrap().channels();
     // println!("{:?}", button_color);
-    let button_color = [55, 182, 82];
+    println!("CS2 Match Acceptor v{}", VERSION);
 
+    let button_color = [55, 182, 82];
     let monitors = Monitor::all().unwrap();
 
     // On Windows monitors are positioned relative to the primary screen so clicking needs to be offset.
@@ -49,19 +52,26 @@ fn main() {
         'outer: for y in 0..image.height() {
             for x in 0..image.width() {
                 let color = image.get_pixel(x, y).channels();
-                if color[0] == button_color[0]
-                    && color[1] == button_color[1]
-                    && color[2] == button_color[2]
+                if (color[0] as i16 - button_color[0] as i16).abs() <= 2
+                    && (color[1] as i16 - button_color[1] as i16).abs() <= 2
+                    && (color[2] as i16 - button_color[2] as i16).abs() <= 2
                 {
                     same_count += 1;
-                }
+                } else {
+                    same_count = 0;
+		}
 
                 if same_count == 10 {
                     // click on the button
                     let x = monitor.x() as f64 + x as f64 + 10f64 + offset_x as f64;
                     let y = monitor.y() as f64 + y as f64 + 20f64 + offset_y as f64;
+
+                    println!("I found the button! ({}, {})", x, y);
+
                     send(&EventType::MouseMove { x, y });
                     send(&EventType::ButtonPress(rdev::Button::Left));
+                    sleep(Duration::from_millis(20));
+                    send(&EventType::ButtonRelease(rdev::Button::Left));
                     break 'outer;
                 }
             }

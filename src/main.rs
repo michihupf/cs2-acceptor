@@ -20,7 +20,9 @@ fn main() {
     // println!("{:?}", button_color);
     println!("CS2 Match Acceptor v{}", VERSION);
 
+    // button color when not and when hovering
     let button_color = [55, 182, 82];
+    let hover_color = [58, 198, 89];
     let monitors = Monitor::all().unwrap();
 
     // On Windows monitors are positioned relative to the primary screen so clicking needs to be offset.
@@ -33,6 +35,9 @@ fn main() {
         monitor.x() + offset_x,
         monitor.y() + offset_y
     );
+
+    let offset_x = monitor.x() as f64 + 10f64 + offset_x as f64;
+    let offset_y = monitor.y() as f64 + 20f64 + offset_y as f64;
 
     println!("Setting up failsafe key [B].");
     thread::spawn(|| {
@@ -52,25 +57,21 @@ fn main() {
         'outer: for y in 0..image.height() {
             for x in 0..image.width() {
                 let color = image.get_pixel(x, y).channels();
-                if (color[0] as i16 - button_color[0] as i16).abs() <= 2
-                    && (color[1] as i16 - button_color[1] as i16).abs() <= 2
-                    && (color[2] as i16 - button_color[2] as i16).abs() <= 2
-                {
+                if is_same_color(color, &button_color) || is_same_color(color, &hover_color) {
                     same_count += 1;
                 } else {
                     same_count = 0;
-		}
+                }
 
                 if same_count == 10 {
                     // click on the button
-                    let x = monitor.x() as f64 + x as f64 + 10f64 + offset_x as f64;
-                    let y = monitor.y() as f64 + y as f64 + 20f64 + offset_y as f64;
+                    println!("I found the button! x,y: ({}, {})", x, y);
 
-                    println!("I found the button! ({}, {})", x, y);
-
-                    send(&EventType::MouseMove { x, y });
+                    send(&EventType::MouseMove {
+                        x: x as f64 + offset_x,
+                        y: y as f64 + offset_y,
+                    });
                     send(&EventType::ButtonPress(rdev::Button::Left));
-                    sleep(Duration::from_millis(20));
                     send(&EventType::ButtonRelease(rdev::Button::Left));
                     break 'outer;
                 }
@@ -78,14 +79,11 @@ fn main() {
         }
 
         sleep(Duration::from_secs(1));
-
-        // look for loading screen to quit automatically [FUTURE VERSION]
-        // let image = image::DynamicImage::from(image).into_luma8();
     }
 }
 
 fn send(event_type: &EventType) {
-    let delay = time::Duration::from_millis(20);
+    let delay = time::Duration::from_millis(30);
     match simulate(event_type) {
         Ok(()) => (),
         Err(SimulateError) => {
@@ -95,6 +93,12 @@ fn send(event_type: &EventType) {
 
     // let OS catch up
     thread::sleep(delay);
+}
+
+fn is_same_color(c1: &[u8], c2: &[u8]) -> bool {
+    (c1[0] as i16 - c2[0] as i16).abs() <= 2
+        && (c1[1] as i16 - c2[1] as i16).abs() <= 2
+        && (c1[2] as i16 - c2[2] as i16).abs() <= 2
 }
 
 fn callback(event: Event) {

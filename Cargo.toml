@@ -1,0 +1,9 @@
+[package]
+name = "cs2-acceptor"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+image = "0.25.5"
+rdev = "0.5.3"
+xcap = "0.0.14"

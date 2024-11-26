@@ -19,12 +19,16 @@ fn main() {
     let button_color = [55, 182, 82];
 
     let monitors = Monitor::all().unwrap();
-    let monitor = monitors.iter().find(|m| m.is_primary()).unwrap();
+
+    // On Windows monitors are positioned relative to the primary screen so clicking needs to be offset.
+    let offset_x = -&monitors.iter().map(|m| m.x()).min().unwrap();
+    let offset_y = -&monitors.iter().map(|m| m.y()).min().unwrap();
+    let monitor = &monitors.iter().find(|m| m.is_primary()).unwrap();
     println!(
         "Found monitor {}. x,y: ({}, {})",
         monitor.name(),
-        monitor.x(),
-        monitor.y()
+        monitor.x() + offset_x,
+        monitor.y() + offset_y
     );
 
     println!("Setting up failsafe key [B].");
@@ -54,8 +58,8 @@ fn main() {
 
                 if same_count == 10 {
                     // click on the button
-                    let x = monitor.x() as f64 + x as f64 + 10f64;
-                    let y = monitor.y() as f64 + y as f64 + 20f64;
+                    let x = monitor.x() as f64 + x as f64 + 10f64 + offset_x as f64;
+                    let y = monitor.y() as f64 + y as f64 + 20f64 + offset_y as f64;
                     send(&EventType::MouseMove { x, y });
                     send(&EventType::ButtonPress(rdev::Button::Left));
                     break 'outer;

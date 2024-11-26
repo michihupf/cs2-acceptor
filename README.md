@@ -18,7 +18,7 @@ The program is set to kill itself when pressing [B]. This is both a failsafe if 
 **I STRONGLY RECOMMEND TO KILL THE PROGRAM WHEN INGAME AS IT MIGHT CLICK GREEN AREAS BY ACCIDENT**
 
 ## Building from Source
-(For Windows users a pre-built binary is available in the [latest release](https://github.com/michihupf/cs2-acceptor/releases/tag/release).)
+(For Windows users a pre-built binary is available in the [latest release](https://github.com/michihupf/cs2-acceptor/releases/latest).)
 
 To build from source make sure you have the [Rust](https://www.rust-lang.org/tools/install) ecosystem installed. Then run
 

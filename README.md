@@ -1,5 +1,5 @@
 # cs2-acceptor
-The cs2-acceptor can automatically accept CS2 matches for you so you can take a toilet break while queuing.
+The cs2-acceptor can automatically accept CS2 matches for you so you can take a toilet break while queueing.
 
 <img src="https://raw.githubusercontent.com/michihupf/cs2-acceptor/refs/heads/master/toilet-cat.jpg" alt="drawing" width="200"/>
 

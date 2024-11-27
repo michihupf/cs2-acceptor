@@ -23,24 +23,21 @@ fn main() {
             println!("Error: {:?}", e);
         }
     });
-
+    
     println!("Looking for CS2...");
-    // title should be same on all platforms
-    while Window::all().unwrap().into_iter().find(|w| w.title() == "Counter-Strike 2").is_none() {
-        sleep(Duration::from_secs(3));
-    }
-
-    let Some(mut cs2) = Window::all().unwrap().into_iter().find(|w| w.title() == "Counter-Strike 2") else {
-        println!("CS2 is not running");
-        sleep(Duration::from_secs(3));
-        exit(0);
+    let mut cs2 = loop {
+        // title should be same on all platforms
+        if let Some(cs2) = Window::all().unwrap().into_iter().find(|w| w.title() == "Counter-Strike 2") {
+            break cs2;
+        }
+        sleep(Duration::from_secs(2));
     };
 
     // On Windows monitors are positioned relative to the primary screen so clicking needs to be offset.
     let monitors = Monitor::all().unwrap();
     let offset_x = -&monitors.iter().map(|m| m.x()).min().unwrap();
     let offset_y = -&monitors.iter().map(|m| m.y()).min().unwrap();
-
+    
     let monitor = cs2.current_monitor();
     println!(
         "Found CS2 on monitor {}. x,y: ({}, {})",
@@ -48,7 +45,7 @@ fn main() {
         monitor.x() + offset_x,
         monitor.y() + offset_y
     );
-
+     
     // update offsets for clicking later
     let offset_x = (monitor.x() + offset_x + 10) as f64;
     let offset_y = (monitor.y() + offset_y + 10) as f64;
@@ -66,7 +63,7 @@ fn main() {
             sleep(Duration::from_secs(2));
             continue;
         }
-
+        
         // capture screen and find button
         let image = monitor.capture_image().unwrap();
         let mut same_count = 0;

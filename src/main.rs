@@ -1,5 +1,5 @@
-use core::time;
 use std::{
+    time,
     process::exit,
     thread::{self, sleep},
     time::Duration,
@@ -7,38 +7,16 @@ use std::{
 
 use image::Pixel;
 use rdev::{listen, simulate, Event, EventType, Key, SimulateError};
-use xcap::Monitor;
+use xcap::{Monitor, Window};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
+// button color when not and when hovering
+const BUTTON_COLOR: [u8; 3] = [55, 182, 82];
+const HOVER_COLOR: [u8; 3] = [58, 198, 89];
+
 fn main() {
-    // let button = image::load_from_memory(include_bytes!("button.png"))
-    //     .unwrap()
-    //     .into_rgb8();
-
-    // let button_color = button.pixels().next().unwrap().channels();
-    // println!("{:?}", button_color);
     println!("CS2 Match Acceptor v{}", VERSION);
-
-    // button color when not and when hovering
-    let button_color = [55, 182, 82];
-    let hover_color = [58, 198, 89];
-    let monitors = Monitor::all().unwrap();
-
-    // On Windows monitors are positioned relative to the primary screen so clicking needs to be offset.
-    let offset_x = -&monitors.iter().map(|m| m.x()).min().unwrap();
-    let offset_y = -&monitors.iter().map(|m| m.y()).min().unwrap();
-    let monitor = &monitors.iter().find(|m| m.is_primary()).unwrap();
-    println!(
-        "Found monitor {}. x,y: ({}, {})",
-        monitor.name(),
-        monitor.x() + offset_x,
-        monitor.y() + offset_y
-    );
-
-    let offset_x = monitor.x() as f64 + 10f64 + offset_x as f64;
-    let offset_y = monitor.y() as f64 + 20f64 + offset_y as f64;
-
     println!("Setting up failsafe key [B].");
     thread::spawn(|| {
         if let Err(e) = listen(callback) {
@@ -46,18 +24,56 @@ fn main() {
         }
     });
 
-    println!("Starting CS2 Acceptor in 3 seconds.");
-    sleep(Duration::from_secs(3));
-    println!("Acceptor started.");
+    println!("Looking for CS2...");
+    // title should be same on all platforms
+    while Window::all().unwrap().into_iter().find(|w| w.title() == "Counter-Strike 2").is_none() {
+        sleep(Duration::from_secs(3));
+    }
+
+    let Some(mut cs2) = Window::all().unwrap().into_iter().find(|w| w.title() == "Counter-Strike 2") else {
+        println!("CS2 is not running");
+        sleep(Duration::from_secs(3));
+        exit(0);
+    };
+
+    // On Windows monitors are positioned relative to the primary screen so clicking needs to be offset.
+    let monitors = Monitor::all().unwrap();
+    let offset_x = -&monitors.iter().map(|m| m.x()).min().unwrap();
+    let offset_y = -&monitors.iter().map(|m| m.y()).min().unwrap();
+
+    let monitor = cs2.current_monitor();
+    println!(
+        "Found CS2 on monitor {}. x,y: ({}, {})",
+        monitor.name(),
+        monitor.x() + offset_x,
+        monitor.y() + offset_y
+    );
+
+    // update offsets for clicking later
+    let offset_x = (monitor.x() + offset_x + 10) as f64;
+    let offset_y = (monitor.y() + offset_y + 10) as f64;
+
+    println!("Acceptor is ready!");
 
     loop {
+        if let Err(err) = cs2.refresh() {
+            // user probably closed CS2
+            println!("ERROR: {}", err);
+            exit(0);
+        }
+        if cs2.is_minimized() {
+            println!("CS2 is minimized. Skipping screengrab.");
+            sleep(Duration::from_secs(2));
+            continue;
+        }
+
         // capture screen and find button
         let image = monitor.capture_image().unwrap();
         let mut same_count = 0;
         'outer: for y in 0..image.height() {
             for x in 0..image.width() {
                 let color = image.get_pixel(x, y).channels();
-                if is_same_color(color, &button_color) || is_same_color(color, &hover_color) {
+                if is_same_color(color, &BUTTON_COLOR) || is_same_color(color, &HOVER_COLOR) {
                     same_count += 1;
                 } else {
                     same_count = 0;
@@ -96,9 +112,8 @@ fn send(event_type: &EventType) {
 }
 
 fn is_same_color(c1: &[u8], c2: &[u8]) -> bool {
-    (c1[0] as i16 - c2[0] as i16).abs() <= 2
-        && (c1[1] as i16 - c2[1] as i16).abs() <= 2
-        && (c1[2] as i16 - c2[2] as i16).abs() <= 2
+    // maybe this is better? c1.iter().zip(c2.iter()).all(|x| x[0].abs_diff(x[1]) <= 2)
+    c1[0].abs_diff(c2[0]) <= 2 && c1[1].abs_diff(c2[1]) <= 2 && c1[2].abs_diff(c2[2]) <= 2
 }
 
 fn callback(event: Event) {

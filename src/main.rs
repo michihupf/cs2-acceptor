@@ -9,7 +9,7 @@ use std::{
 };
 use xcap::Monitor;
 
-#[cfg(not(feature = "ignore-cs2"))]
+#[cfg(feature = "detect-cs2")]
 use xcap::Window;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -27,31 +27,18 @@ fn main() {
         }
     });
 
-    #[cfg(not(feature = "ignore-cs2"))]
-    {
-        println!("Looking for CS2...");
-        let mut cs2 = loop {
-            // title should be same on all platforms
-            if let Some(cs2) = Window::all()
-                .unwrap()
-                .into_iter()
-                .find(|w| w.title() == "Counter-Strike 2")
-            {
-                break cs2;
-            }
-            sleep(Duration::from_secs(2));
-        };
-    }
+    #[cfg(feature = "detect-cs2")]
+    let mut cs2 = find_cs2();
 
     // On Windows monitors are positioned relative to the primary screen so clicking needs to be offset.
     let monitors = Monitor::all().unwrap();
     let offset_x = -&monitors.iter().map(xcap::Monitor::x).min().unwrap();
     let offset_y = -&monitors.iter().map(xcap::Monitor::y).min().unwrap();
 
-    #[cfg(feature = "ignore-cs2")]
+    #[cfg(not(feature = "detect-cs2"))]
     let monitor = monitors.iter().find(|m| m.is_primary()).unwrap();
 
-    #[cfg(not(feature = "ignore-cs2"))]
+    #[cfg(feature = "detect-cs2")]
     let monitor = cs2.current_monitor();
     println!(
         "Found CS2 on monitor {}. x,y: ({}, {})",
@@ -67,7 +54,7 @@ fn main() {
     println!("Acceptor is ready!");
 
     loop {
-        #[cfg(not(feature = "ignore-cs2"))]
+        #[cfg(feature = "detect-cs2")]
         {
             if let Err(err) = cs2.refresh() {
                 // user probably closed CS2
@@ -109,6 +96,22 @@ fn main() {
         }
 
         sleep(Duration::from_secs(1));
+    }
+}
+
+#[cfg(feature = "detect-cs2")]
+fn find_cs2() -> Window {
+    println!("Looking for CS2...");
+    loop {
+        // title should be same on all platforms
+        if let Some(cs2) = Window::all()
+            .unwrap()
+            .into_iter()
+            .find(|w| w.title() == "Counter-Strike 2")
+        {
+            break cs2;
+        }
+        sleep(Duration::from_secs(2));
     }
 }
 

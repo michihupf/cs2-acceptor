@@ -1,4 +1,4 @@
-#![warn(clippy::all, clippy::pedantic, clippy::nursery, clippy::cargo)]
+#![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 
 use image::Pixel;
 use rdev::{listen, simulate, Event, EventType, Key, SimulateError};

@@ -1,5 +1,9 @@
 [package]
 name = "cs2-acceptor"
+description = "A tool to automatically accept Counter-Strike 2 Matchmaking matches so you can take a toilet break"
+repository = "https://github.com/michihupf/cs2-acceptor"
+license = "MIT OR Apache-2.0"
+keywords = ["counter-strike", "automatic", "auto", "cs2", "counter-strike-2", "cs2-auto-accept", "cs2-accept"]
 version = "1.0.0"
 edition = "2021"
 
